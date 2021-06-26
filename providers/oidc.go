@@ -212,7 +212,7 @@ func (p *OIDCProvider) CreateSessionFromToken(ctx context.Context, token string)
 		return nil, err
 	}
 
-	ss, err := p.buildSessionFromClaims(idToken)
+	ss, err := p.buildSessionFromClaims(idToken, "")
 	if err != nil {
 		return nil, err
 	}
@@ -248,7 +248,7 @@ func (p *OIDCProvider) createSession(ctx context.Context, token *oauth2.Token, r
 		}
 	}
 
-	ss, err := p.buildSessionFromClaims(idToken)
+	ss, err := p.buildSessionFromClaims(idToken, token.AccessToken)
 	if err != nil {
 		return nil, err
 	}

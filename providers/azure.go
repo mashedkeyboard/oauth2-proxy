@@ -150,7 +150,7 @@ func (p *AzureProvider) Redeem(ctx context.Context, redirectURL, code string) (*
 	session.CreatedAtNow()
 	session.SetExpiresOn(time.Unix(jsonResponse.ExpiresOn, 0))
 
-	email, err := p.verifyTokenAndExtractEmail(ctx, session.IDToken)
+	email, err := p.verifyTokenAndExtractEmail(ctx, session.IDToken, session.AccessToken)
 
 	// https://github.com/oauth2-proxy/oauth2-proxy/pull/914#issuecomment-782285814
 	// https://github.com/AzureAD/azure-activedirectory-library-for-java/issues/117
@@ -163,7 +163,7 @@ func (p *AzureProvider) Redeem(ctx context.Context, redirectURL, code string) (*
 	}
 
 	if session.Email == "" {
-		email, err = p.verifyTokenAndExtractEmail(ctx, session.AccessToken)
+		email, err = p.verifyTokenAndExtractEmail(ctx, session.AccessToken, session.AccessToken)
 		if err == nil && email != "" {
 			session.Email = email
 		} else {
@@ -215,16 +215,16 @@ func (p *AzureProvider) prepareRedeem(redirectURL, code string) (url.Values, err
 
 // verifyTokenAndExtractEmail tries to extract email claim from either id_token or access token
 // when oidc verifier is configured
-func (p *AzureProvider) verifyTokenAndExtractEmail(ctx context.Context, token string) (string, error) {
+func (p *AzureProvider) verifyTokenAndExtractEmail(ctx context.Context, token string, accessToken string) (string, error) {
 	email := ""
 
 	if token != "" && p.Verifier != nil {
 		token, err := p.Verifier.Verify(ctx, token)
 		// due to issues mentioned above, id_token may not be signed by AAD
 		if err == nil {
-			claims, err := p.getClaims(token)
+			s, err := p.buildSessionFromClaims(token, accessToken)
 			if err == nil {
-				email = claims.Email
+				email = s.Email
 			} else {
 				logger.Printf("unable to get claims from token: %v", err)
 			}
@@ -287,7 +287,7 @@ func (p *AzureProvider) redeemRefreshToken(ctx context.Context, s *sessions.Sess
 	s.CreatedAtNow()
 	s.SetExpiresOn(time.Unix(jsonResponse.ExpiresOn, 0))
 
-	email, err := p.verifyTokenAndExtractEmail(ctx, s.IDToken)
+	email, err := p.verifyTokenAndExtractEmail(ctx, s.IDToken, s.AccessToken)
 
 	// https://github.com/oauth2-proxy/oauth2-proxy/pull/914#issuecomment-782285814
 	// https://github.com/AzureAD/azure-activedirectory-library-for-java/issues/117
@@ -300,7 +300,7 @@ func (p *AzureProvider) redeemRefreshToken(ctx context.Context, s *sessions.Sess
 	}
 
 	if s.Email == "" {
-		email, err = p.verifyTokenAndExtractEmail(ctx, s.AccessToken)
+		email, err = p.verifyTokenAndExtractEmail(ctx, s.AccessToken, s.AccessToken)
 		if err == nil && email != "" {
 			s.Email = email
 		} else {
