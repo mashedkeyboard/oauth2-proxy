@@ -67,9 +67,11 @@ func (c *claimExtractor) GetClaim(claim string) (interface{}, bool, error) {
 func (c *claimExtractor) getProfileClaims() (map[string]interface{}, error) {
 	var claims map[string]interface{}
 
-	if c.profileURL == nil {
+	if c.profileURL == nil || c.requestHeaders == nil {
 		// When no profileURL is set, we return a non-empty map so that
 		// we don't attempt to populate the profile claims again.
+		// If there are no headers, the request would be unauthorized so we also skip
+		// in this case too.
 		return make(map[string]interface{}), nil
 	}
 
