@@ -193,25 +193,18 @@ func (p *ProviderData) getClaimExtractor(idToken *oidc.IDToken, accessToken stri
 	return extractor, nil
 }
 
-// getClaims extracts IDToken claims into an OIDCClaims
-func (p *ProviderData) getClaims(idToken *oidc.IDToken) (*OIDCClaims, error) {
-	claims := &OIDCClaims{}
-
-	// Extract default claims.
-	if err := idToken.Claims(&claims); err != nil {
-		return nil, fmt.Errorf("failed to parse default id_token claims: %v", err)
-	}
-
-	return claims, nil
-}
-
 // checkNonce compares the session's nonce with the IDToken's nonce claim
 func (p *ProviderData) checkNonce(s *sessions.SessionState, idToken *oidc.IDToken) error {
-	claims, err := p.getClaims(idToken)
+	extractor, err := p.getClaimExtractor(idToken, "")
 	if err != nil {
 		return fmt.Errorf("id_token claims extraction failed: %v", err)
 	}
-	if !s.CheckNonce(claims.Nonce) {
+	var nonce string
+	if _, err := extractor.GetClaimInto("nonce", &nonce); err != nil {
+		return fmt.Errorf("could not extract nonce from ID Token: %v", err)
+	}
+
+	if !s.CheckNonce(nonce) {
 		return errors.New("id_token nonce claim does not match the session nonce")
 	}
 	return nil

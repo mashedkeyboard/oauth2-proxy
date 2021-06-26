@@ -78,6 +78,7 @@ func NewAzureProvider(p *ProviderData) *AzureProvider {
 	if p.ValidateURL == nil || p.ValidateURL.String() == "" {
 		p.ValidateURL = p.ProfileURL
 	}
+	p.getAuthorizationHeaderFunc = makeAzureHeader
 
 	return &AzureProvider{
 		ProviderData: p,
